@@ -86,7 +86,6 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// === NOTIFICACIONES ===
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SHOW_NOTIFICATION') {
     const { title, body, icon } = event.data;
