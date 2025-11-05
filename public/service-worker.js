@@ -1,87 +1,100 @@
-const CACHE_NAME = 'poke-cache-v1';
-const API_CACHE = 'poke-api-cache-v1';
-const URLS_TO_CACHE = [
+const STATIC_CACHE = 'poke-static-v2';
+const DATA_CACHE = 'poke-data-v2';
+const FILES_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   '/favicon.ico',
   '/logo192.png',
-  '/logo512.png',
-  '/static/js/bundle.js',
-  '/static/css/main.css'
+  '/logo512.png'
 ];
 
-// === INSTALACIÓN ===
+// === INSTALAR Y GUARDAR ARCHIVOS BASE ===
 self.addEventListener('install', (event) => {
-  console.log('Service Worker instalado y precachéando recursos base...');
+  console.log('Service Worker instalado');
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(URLS_TO_CACHE);
+    caches.open(STATIC_CACHE).then((cache) => {
+      console.log('Archivos precacheados');
+      return cache.addAll(FILES_TO_CACHE);
     })
   );
   self.skipWaiting();
 });
 
-// === ACTIVACIÓN ===
+// === ACTIVAR Y LIMPIAR VIEJOS ===
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activado, limpiando cachés viejas...');
+  console.log('Service Worker activado');
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
+    caches.keys().then((cacheNames) =>
+      Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME && name !== API_CACHE)
+          .filter(
+            (name) => name !== STATIC_CACHE && name !== DATA_CACHE
+          )
           .map((name) => caches.delete(name))
-      );
-    })
+      )
+    )
   );
   self.clients.claim();
 });
 
+// === INTERCEPTAR FETCH ===
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
+  // Si es la API de Pokémon
   if (request.url.includes('https://pokeapi.co/api/v2/pokemon')) {
     event.respondWith(
-      caches.open(API_CACHE).then(async (cache) => {
+      caches.open(DATA_CACHE).then(async (cache) => {
         try {
-          const response = await fetch(request);
-          cache.put(request, response.clone());
-          return response;
-        } catch (error) {
-          console.warn('Sin conexión, sirviendo Pokémon desde caché');
-          const cachedResponse = await cache.match(request);
-          return cachedResponse || new Response(JSON.stringify({ results: [] }), {
-            headers: { 'Content-Type': 'application/json' },
-          });
+          const res = await fetch(request);
+          cache.put(request.url, res.clone());
+          return res;
+        } catch (err) {
+          console.log('Offline: sirviendo datos cacheados');
+          const cachedRes = await cache.match(request.url);
+          return (
+            cachedRes ||
+            new Response(
+              JSON.stringify({ results: [] }),
+              { headers: { 'Content-Type': 'application/json' } }
+            )
+          );
         }
       })
     );
     return;
   }
 
+  // Para otros recursos estáticos
   event.respondWith(
-    caches.match(request).then((cached) => {
+    caches.match(request).then((response) => {
       return (
-        cached ||
-        fetch(request).then((response) => {
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, response.clone());
-            return response;
-          });
-        })
+        response ||
+        fetch(request)
+          .then((res) => {
+            return caches.open(STATIC_CACHE).then((cache) => {
+              cache.put(request.url, res.clone());
+              return res;
+            });
+          })
+          .catch(() =>
+            caches.match('/index.html') // fallback básico
+          )
       );
     })
   );
 });
 
+// === NOTIFICACIONES ===
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === "SHOW_NOTIFICATION") {
+  if (event.data?.type === 'SHOW_NOTIFICATION') {
     const { title, body, icon } = event.data;
-    self.registration.showNotification(title || "Pokédex actualizada", {
-      body: body || "¡Atrápalos ya!",
-      icon: icon || "/icons/pokeball.png",
+    self.registration.showNotification(title || 'Pokédex', {
+      body: body || '¡Atrápalos todos!',
+      icon: icon || '/logo192.png',
       vibrate: [200, 100, 200],
-      tag: "poke-notify",
+      tag: 'poke-notify'
     });
   }
 });
