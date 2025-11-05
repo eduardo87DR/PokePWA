@@ -10,7 +10,6 @@ function App() {
   const [totalPaginas, setTotalPaginas] = useState(0);
   const limite = 20;
 
-  // === Pedir permiso para notificaciones ===
   const solicitarPermisoNotificaciones = () => {
     if ("Notification" in window) {
       Notification.requestPermission().then((resultado) => {
@@ -20,7 +19,6 @@ function App() {
     }
   };
 
-  // === Cargar todos los nombres y URLs ===
   useEffect(() => {
     fetch("https://pokeapi.co/api/v2/pokemon?limit=10000")
       .then((res) => res.json())
@@ -28,7 +26,6 @@ function App() {
       .catch((err) => console.error("Error cargando lista de Pokémon:", err));
   }, []);
 
-  // === Cargar los Pokémon de la página actual o buscados ===
   useEffect(() => {
     const listaBase = busqueda
       ? todosLosPokemons.filter((p) =>
@@ -79,7 +76,6 @@ function App() {
         <nav className="nav-links">
           <a href="#home">Inicio</a>
           <a href="#pokedex">Pokédex</a>
-          <a href="#contact">Contacto</a>
         </nav>
       </header>
 
@@ -107,7 +103,7 @@ function App() {
             value={busqueda}
             onChange={(e) => {
               setBusqueda(e.target.value);
-              setPagina(1); // Reiniciar paginación al buscar
+              setPagina(1); 
             }}
           />
         </div>
