@@ -170,3 +170,12 @@ body {
 .footer a:hover {
   text-decoration: underline;
 }
+
+.offline-alert {
+  background: #ffe066;
+  color: #333;
+  text-align: center;
+  padding: 10px;
+  font-weight: 600;
+  border-bottom: 2px solid #ffcc00;
+}

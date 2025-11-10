@@ -8,6 +8,7 @@ function App() {
   const [busqueda, setBusqueda] = useState("");
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(0);
+  const [offlineError, setOfflineError] = useState(false);
   const limite = 20;
 
   const solicitarPermisoNotificaciones = () => {
@@ -20,10 +21,22 @@ function App() {
   };
 
   useEffect(() => {
+    if (!navigator.onLine) {
+      console.warn("Sin conexión: mostrando datos guardados en caché.");
+      setOfflineError(true);
+      return;
+    }
+
     fetch("https://pokeapi.co/api/v2/pokemon?limit=10000")
       .then((res) => res.json())
-      .then((data) => setTodosLosPokemons(data.results))
-      .catch((err) => console.error("Error cargando lista de Pokémon:", err));
+      .then((data) => {
+        setTodosLosPokemons(data.results);
+        setOfflineError(false);
+      })
+      .catch((err) => {
+        console.error("Error cargando lista de Pokémon:", err);
+        setOfflineError(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -41,11 +54,18 @@ function App() {
 
     if (seleccionados.length > 0) {
       const detallesPromises = seleccionados.map((poke) =>
-        fetch(poke.url).then((res) => res.json())
+        fetch(poke.url)
+          .then((res) => res.json())
+          .catch(() => null) // si algún fetch falla, devuelve null
       );
+
       Promise.all(detallesPromises)
-        .then((detalles) => setPokemonList(detalles))
-        .catch((err) => console.error("Error obteniendo detalles:", err));
+        .then((detalles) => {
+          const validos = detalles.filter((d) => d !== null);
+          setPokemonList(validos);
+          if (validos.length === 0) setOfflineError(true);
+        })
+        .catch(() => setOfflineError(true));
     } else {
       setPokemonList([]);
     }
@@ -94,6 +114,14 @@ function App() {
         )}
       </section>
 
+      {/* ⚠️ MENSAJE DE ADVERTENCIA OFFLINE */}
+      {offlineError && (
+        <div className="offline-warning">
+          ⚠️ Algunos datos no están disponibles sin conexión.  
+          <br /> Conéctate a Internet para cargar más Pokémon.
+        </div>
+      )}
+
       {/* CONTENIDO PRINCIPAL */}
       <main id="pokedex" className="content">
         <div className="search-bar">
@@ -103,7 +131,7 @@ function App() {
             value={busqueda}
             onChange={(e) => {
               setBusqueda(e.target.value);
-              setPagina(1); 
+              setPagina(1);
             }}
           />
         </div>
