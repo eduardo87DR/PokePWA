@@ -4,7 +4,9 @@ import "./App.css";
 function App() {
   const [pokemonList, setPokemonList] = useState([]);
   const [todosLosPokemons, setTodosLosPokemons] = useState([]);
-  const [permisoNotificaciones, setPermisoNotificaciones] = useState(Notification.permission);
+  const [permisoNotificaciones, setPermisoNotificaciones] = useState(
+    Notification.permission
+  );
   const [busqueda, setBusqueda] = useState("");
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(0);
@@ -56,14 +58,18 @@ function App() {
       const detallesPromises = seleccionados.map((poke) =>
         fetch(poke.url)
           .then((res) => res.json())
-          .catch(() => null) // si algún fetch falla, devuelve null
+          .then((data) => {
+            if (data.offlineError) throw new Error("offline");
+            return data;
+          })
+          .catch(() => null)
       );
 
       Promise.all(detallesPromises)
         .then((detalles) => {
           const validos = detalles.filter((d) => d !== null);
           setPokemonList(validos);
-          if (validos.length === 0) setOfflineError(true);
+          setOfflineError(validos.length === 0);
         })
         .catch(() => setOfflineError(true));
     } else {
@@ -103,12 +109,15 @@ function App() {
       <section className="banner">
         <h1>¡Bienvenido a PokePWA!</h1>
         <p>
-          Explora el mundo Pokémon de manera rápida y ligera. Descubre tus Pokémon favoritos
-          y recibe notificaciones al encontrarlos.  
-          ¡Atrápalos a todos desde cualquier dispositivo!
+          Explora el mundo Pokémon de manera rápida y ligera. Descubre tus
+          Pokémon favoritos y recibe notificaciones al encontrarlos. ¡Atrápalos
+          a todos desde cualquier dispositivo!
         </p>
         {permisoNotificaciones !== "granted" && (
-          <button className="notif-btn" onClick={solicitarPermisoNotificaciones}>
+          <button
+            className="notif-btn"
+            onClick={solicitarPermisoNotificaciones}
+          >
             Activar notificaciones
           </button>
         )}
@@ -117,7 +126,7 @@ function App() {
       {/* ⚠️ MENSAJE DE ADVERTENCIA OFFLINE */}
       {offlineError && (
         <div className="offline-warning">
-          ⚠️ Algunos datos no están disponibles sin conexión.  
+          ⚠️ Algunos datos no están disponibles sin conexión.
           <br /> Conéctate a Internet para cargar más Pokémon.
         </div>
       )}
@@ -137,7 +146,19 @@ function App() {
         </div>
 
         <div className="poke-container">
-          {pokemonList.length > 0 ? (
+          {offlineError ? (
+            <div className="offline-fallback">
+              <img
+                src="https://cdn-icons-png.flaticon.com/512/188/188918.png"
+                alt="Offline"
+                width="80"
+                height="80"
+              />
+              <h2>Modo sin conexión</h2>
+              <p>No se pudieron cargar todos los Pokémon.</p>
+              <p>Intenta volver cuando tengas conexión a Internet.</p>
+            </div>
+          ) : pokemonList.length > 0 ? (
             pokemonList.map((poke) => (
               <div
                 key={poke.id}

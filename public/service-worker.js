@@ -42,7 +42,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
-  // Si es la API de Pokémon
+ // Si es la API de Pokémon
   if (request.url.includes('https://pokeapi.co/api/v2/pokemon')) {
     event.respondWith(
       caches.open(DATA_CACHE).then(async (cache) => {
@@ -53,12 +53,12 @@ self.addEventListener('fetch', (event) => {
         } catch (err) {
           console.log('Offline: sirviendo datos cacheados');
           const cachedRes = await cache.match(request.url);
-          return (
-            cachedRes ||
-            new Response(
-              JSON.stringify({ results: [] }),
-              { headers: { 'Content-Type': 'application/json' } }
-            )
+          if (cachedRes) return cachedRes;
+          
+          // ⚠️ Si no hay nada cacheado, devolver aviso explícito
+          return new Response(
+            JSON.stringify({ offlineError: true, results: [] }),
+            { headers: { 'Content-Type': 'application/json' } }
           );
         }
       })

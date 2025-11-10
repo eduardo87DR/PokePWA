@@ -179,3 +179,28 @@ body {
   font-weight: 600;
   border-bottom: 2px solid #ffcc00;
 }
+
+.offline-fallback {
+  text-align: center;
+  padding: 40px 20px;
+  background: #fff3cd;
+  border-radius: 15px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  margin: 20px auto;
+  max-width: 500px;
+}
+
+.offline-fallback img {
+  margin-bottom: 10px;
+  opacity: 0.8;
+}
+
+.offline-fallback h2 {
+  color: #856404;
+  font-size: 1.5rem;
+}
+
+.offline-fallback p {
+  color: #6c757d;
+  margin: 5px 0;
+}
